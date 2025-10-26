@@ -7,32 +7,27 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
       
-      # Setup Node.js pour installer Snyk
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
       
-      # Setup Java pour Maven
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '11'
           distribution: 'temurin'
-          cache: 'maven'
       
-      # Build Maven
       - name: Build with Maven
-        run: mvn clean install -DskipTests
+        run: mvn clean package -DskipTests
       
-      # ✅ Installation de Snyk CLI
       - name: Install Snyk CLI
         run: npm install -g snyk
       
-      # Authentification et scan
-      - name: Run Snyk Security Scan
+      - name: Run Snyk Scan
         continue-on-error: true
         run: |
           snyk auth ${{ secrets.SNYK_TOKEN }}
@@ -41,11 +36,9 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       
-      # Upload du rapport
       - name: Upload Snyk Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: snyk-security-report
+          name: snyk-report
           path: snyk-report.json
-          retention-days: 30
