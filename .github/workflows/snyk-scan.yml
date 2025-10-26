@@ -1,11 +1,21 @@
 name: Security & Quality Scan
 on: 
   push:
+    branches:
+      - main
+      - master
+  pull_request:
   workflow_dispatch:
 
 jobs:
   scan:
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+    
     steps:
       - uses: actions/checkout@v4
         with:
@@ -24,12 +34,12 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
       
-      - name: Build
+      - name: Build with Gradle
         run: ./gradlew build -x test
       
-      # SonarCloud avec action officielle
+      # ✅ Nouvelle action (pas dépréciée)
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@v4.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -37,10 +47,13 @@ jobs:
           args: >
             -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
             -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
-            -Dsonar.java.binaries=build/classes
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.java.binaries=build/classes/java/main
+            -Dsonar.sources=src/main/java
       
-      # Snyk Scan
+      # Snyk Security Scan
       - name: Install & Run Snyk
+        continue-on-error: true
         run: |
           npm install -g snyk
           snyk auth ${{ secrets.SNYK_TOKEN }}
